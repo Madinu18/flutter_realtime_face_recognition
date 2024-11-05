@@ -15,6 +15,8 @@ class Wrapper extends StatelessWidget {
           );
         } else if (state is OnRegisterPage) {
           return const RegisterPage();
+        } else if (state is OnDataPage){
+          return const DataPage();
         }
         return Container(); // fallback
       },

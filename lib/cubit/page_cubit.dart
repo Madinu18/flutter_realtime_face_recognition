@@ -6,13 +6,17 @@ import 'package:flutter/material.dart';
 part 'page_state.dart';
 
 class PageCubit extends Cubit<PageState> {
-  PageCubit() : super(OnMainPage()); // Changed initial state name
+  PageCubit() : super(OnMainPage());
 
   void goToRegisterPage() {
     emit(OnRegisterPage());
   }
 
-  void goToMainPage() {  // Added method to return to main page
+  void goToMainPage() {
     emit(OnMainPage());
+  }
+
+  void goToDataPage(){
+    emit(OnDataPage());
   }
 }

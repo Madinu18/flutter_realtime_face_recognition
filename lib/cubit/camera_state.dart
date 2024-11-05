@@ -46,3 +46,11 @@ class CameraDetectedFaces extends CameraState {
 
   List<Object> get props => [boundingBox];
 }
+
+class CameraFaceAlert extends CameraState {
+  final String message;
+
+  CameraFaceAlert(this.message);
+
+  List<Object> get props => [message];
+}

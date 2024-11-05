@@ -9,5 +9,6 @@ abstract class PageState extends Equatable {
   List<Object?> get props => [];
 }
 
-class OnMainPage extends PageState {} // Changed from MainPage
-class OnRegisterPage extends PageState {} // Changed from GoToRegisterPage
+class OnMainPage extends PageState {}
+class OnRegisterPage extends PageState {}
+class OnDataPage extends PageState {}
