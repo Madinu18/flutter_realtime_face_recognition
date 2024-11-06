@@ -105,8 +105,7 @@ class DatabaseHelper {
 
       MSG.DBG("Data Face ${data['name']}");
 
-      double similarity =
-          calculateCosineSimilarity(newEmbedding!, storedEmbedding);
+      double similarity = calculateCosineSimilarity(newEmbedding!, storedEmbedding);
 
       if (similarity > threshold && similarity > bestSimilarity) {
         bestSimilarity = similarity;
@@ -127,27 +126,6 @@ class DatabaseHelper {
     }
 
     return null;
-  }
-
-  double calculateCosineSimilarity(List<double> a, List<double> b) {
-    if (a.length != b.length) return 0;
-
-    double dotProduct = 0.0;
-    double normA = 0.0;
-    double normB = 0.0;
-
-    for (int i = 0; i < a.length; i++) {
-      dotProduct += a[i] * b[i];
-      normA += a[i] * a[i];
-      normB += b[i] * b[i];
-    }
-
-    normA = sqrt(normA);
-    normB = sqrt(normB);
-
-    if (normA == 0 || normB == 0) return 0;
-
-    return dotProduct / (normA * normB);
   }
 
   Future<void> deleteAllData() async {

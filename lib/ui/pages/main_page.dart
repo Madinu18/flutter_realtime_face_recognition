@@ -24,7 +24,8 @@ class _MainPageState extends State<MainPage> {
   void initState() {
     super.initState();
     _cameraCubit = context.read<CameraCubit>();
-    _mlServiceCubit = context.read<MLServiceCubit>();
+    // _mlServiceCubit = context.read<MLServiceCubit>();
+    loadModel();
     _cameraCubit.initializeCamera();
     _startTimer();
   }
@@ -33,6 +34,7 @@ class _MainPageState extends State<MainPage> {
   void dispose() {
     _cameraCubit.close();
     _stopTimer();
+    disposeModel();
     super.dispose();
   }
 

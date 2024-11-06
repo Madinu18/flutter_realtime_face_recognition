@@ -54,3 +54,11 @@ class CameraFaceAlert extends CameraState {
 
   List<Object> get props => [message];
 }
+
+class OutputEmbeddedVector extends CameraState {
+  final Future<List<double>> output;
+
+  OutputEmbeddedVector(this.output);
+
+  List<Object> get props => [output];
+}
