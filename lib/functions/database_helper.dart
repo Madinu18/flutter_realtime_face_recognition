@@ -89,12 +89,11 @@ class DatabaseHelper {
     await db.close();
   }
 
-  Future<Map<String, dynamic>?> findMatchingFace(
-      List<double>? newEmbedding) async {
-    final db = await database;
-    final faceData = await db.query('face_data');
+  (User, double)? _findBestMatch(Map<String, dynamic> args) {
+    List<Map<String, dynamic>> faceData = args['FaceData'];
+    List<double> newEmbedding = args['Embedding'];
+    double threshold = args['Threshold'];
 
-    double threshold = 0.6;
     User? matchedUser;
     double bestSimilarity = -1;
 
@@ -103,9 +102,8 @@ class DatabaseHelper {
         jsonDecode(data['vector'] as String),
       );
 
-      MSG.DBG("Data Face ${data['name']}");
-
-      double similarity = calculateCosineSimilarity(newEmbedding!, storedEmbedding);
+      double similarity =
+          calculateCosineSimilarity(newEmbedding, storedEmbedding);
 
       if (similarity > threshold && similarity > bestSimilarity) {
         bestSimilarity = similarity;
@@ -117,11 +115,27 @@ class DatabaseHelper {
       }
     }
 
-    if (matchedUser != null) {
-      double confidencePercentage = bestSimilarity * 100;
+    return matchedUser != null ? (matchedUser, bestSimilarity) : null;
+  }
+
+  Future<Map<String, dynamic>?> findMatchingFace(
+      List<double>? newEmbedding) async {
+    final db = await database;
+    final faceData = await db.query('face_data');
+
+    double threshold = 0.6;
+    Map<String, dynamic> args = {
+      'FaceData': faceData,
+      'Embedding': newEmbedding,
+      'Threshold': threshold
+    };
+
+    final matchResult = await compute(_findBestMatch, args);
+
+    if (matchResult != null) {
       return {
-        'user': matchedUser,
-        'confidence': confidencePercentage,
+        'user': matchResult.$1,
+        'confidence': matchResult.$2,
       };
     }
 

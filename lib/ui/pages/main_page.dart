@@ -12,11 +12,13 @@ class _MainPageState extends State<MainPage> {
   late final CameraCubit _cameraCubit;
   late final MLServiceCubit _mlServiceCubit;
   XFile? capturedImage;
-  List<double>? output;
+  List<double> output = [];
   Map<String, dynamic>? data;
 
   String matchedUserName = "";
   double similarityPercentage = 0.0;
+
+  String alertMessage = "";
 
   Timer? _timer;
 
@@ -39,7 +41,7 @@ class _MainPageState extends State<MainPage> {
   }
 
   void _startTimer() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 2), (timer) {
       _takePicture();
     });
   }
@@ -55,41 +57,6 @@ class _MainPageState extends State<MainPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error taking picture: $e')),
-        );
-      }
-    }
-  }
-
-  Future<void> _deleteAllData() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Confirm Deletion'),
-          content: const Text('Are you sure you want to delete all data?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Delete'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirmed == true) {
-      try {
-        await DatabaseHelper.instance.deleteAllData();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('All data deleted successfully.')),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error deleting data: $e')),
         );
       }
     }
@@ -206,35 +173,16 @@ class _MainPageState extends State<MainPage> {
         listeners: [
           BlocListener<CameraCubit, CameraState>(
             listener: (context, state) async {
-              if (state is CameraCaptured) {
-                setState(() {
-                  capturedImage = state.capturedImage;
-                });
-                await _mlServiceCubit.getEmbeddedVector(capturedImage!);
-              }
-              if (state is CameraFaceAlert) {
-                matchedUserName = "";
-                similarityPercentage = 0.0;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(state.message),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
-              }
-            },
-          ),
-          BlocListener<MLServiceCubit, MLServiceState>(
-            listener: (context, state) async {
-              if (state is GetEmbeddedVectorSuccess) {
+              if (state is OutputEmbeddedVector) {
                 output = state.output;
-                MSG.DBG("Embedded Vector = $output");
+
                 var allFaceData =
                     await DatabaseHelper.instance.getAllFaceData();
+
                 MSG.DBG("All Face Data: $allFaceData");
-                if (allFaceData.isNotEmpty && output != null) {
-                  data =
-                      (await DatabaseHelper.instance.findMatchingFace(output!));
+
+                if (allFaceData.isNotEmpty && output.isNotEmpty) {
+                  data = await DatabaseHelper.instance.findMatchingFace(output);
 
                   if (data != null) {
                     MSG.DBG("Output is ${data?['user']}");
@@ -256,6 +204,50 @@ class _MainPageState extends State<MainPage> {
                   );
                 }
               }
+              if (state is CameraFaceAlert) {
+                matchedUserName = "";
+                similarityPercentage = 0.0;
+                // ScaffoldMessenger.of(context).showSnackBar(
+                //   SnackBar(
+                //     content: Text(state.message),
+                //     backgroundColor: Colors.orange,
+                //   ),
+                // );
+              }
+            },
+          ),
+          BlocListener<MLServiceCubit, MLServiceState>(
+            listener: (context, state) async {
+              // if (state is GetEmbeddedVectorSuccess) {
+              //   output = state.output;
+              //   MSG.DBG("Embedded Vector = $output");
+              //   var allFaceData =
+              //       await DatabaseHelper.instance.getAllFaceData();
+              //   MSG.DBG("All Face Data: $allFaceData");
+              //   if (allFaceData.isNotEmpty && output != null) {
+              //     data =
+              //         (await DatabaseHelper.instance.findMatchingFace(output!));
+
+              //     if (data != null) {
+              //       MSG.DBG("Output is ${data?['user']}");
+              //       if (data?['user'] is User) {
+              //         User matchedUser = data?['user'];
+              //         matchedUserName = matchedUser.name;
+              //       }
+              //       similarityPercentage = data?['confidence'];
+              //     } else {
+              //       matchedUserName = "Face is Not Registered";
+              //       similarityPercentage = 0.0;
+              //     }
+              //   } else {
+              //     ScaffoldMessenger.of(context).showSnackBar(
+              //       const SnackBar(
+              //         content: Text('There is no face in database'),
+              //         backgroundColor: Colors.red,
+              //       ),
+              //     );
+              //   }
+              // }
             },
           )
         ],

@@ -200,14 +200,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  gallery_saver_plus:
-    dependency: "direct main"
-    description:
-      name: gallery_saver_plus
-      sha256: "6ee232d1fb6b622944c9ce22b7886c24b68c8d3f3f420117c4fc5af4fd7d5c5a"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.2.0"
   google_mlkit_commons:
     dependency: transitive
     description:
@@ -224,22 +216,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.12.0"
-  http:
-    dependency: transitive
-    description:
-      name: http
-      sha256: b9c29a161230ee03d3ccf545097fccd9b87a5264228c5d348202e0f0c28f9010
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.2.2"
-  http_parser:
-    dependency: transitive
-    description:
-      name: http_parser
-      sha256: "2aa08ce0341cc9b354a498388e30986515406668dbcc4f7c950c3e715496693b"
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.0.2"
   image:
     dependency: "direct main"
     description:

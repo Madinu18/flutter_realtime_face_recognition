@@ -56,7 +56,7 @@ class CameraFaceAlert extends CameraState {
 }
 
 class OutputEmbeddedVector extends CameraState {
-  final Future<List<double>> output;
+  final List<double> output;
 
   OutputEmbeddedVector(this.output);
 

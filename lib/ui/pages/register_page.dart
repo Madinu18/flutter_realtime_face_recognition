@@ -125,7 +125,8 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   void initState() {
     _cameraCubit = context.read<CameraCubit>();
-    _mlServiceCubit = context.read<MLServiceCubit>();
+    // _mlServiceCubit = context.read<MLServiceCubit>();
+    loadModel();
     _cameraCubit.initializeCamera();
     super.initState();
     _startTimer();
@@ -150,6 +151,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   void dispose() {
     // _cameraCubit.close();
+    disposeModel();
     _stopTimer();
     super.dispose();
   }
@@ -167,9 +169,9 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   void _startTimer() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) async {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (counter < 5) {
-        await _takePicture();
+        _takePicture();
       }
     });
   }
@@ -252,19 +254,27 @@ class _RegisterPageState extends State<RegisterPage> {
         listeners: [
           BlocListener<CameraCubit, CameraState>(
             listener: (context, state) async {
-              if (state is CameraDetectedFaces) {
-                setState(() {
-                  boundingBox = state.boundingBox;
-                });
-              }
-              if (state is CameraCaptured) {
-                setState(() {
-                  capturedImage = state.capturedImage;
-                  _mlServiceCubit.getEmbeddedVector(capturedImage!);
-                });
-                if (capturedImage != null) {
-                  await _getImageSize(capturedImage!.path);
+              if (state is OutputEmbeddedVector && _output1 == null) {
+                _output1 = state.output;
+              } else if (state is OutputEmbeddedVector &&
+                  _output1 != null &&
+                  counter < 5) {
+                _output2 = state.output;
+                double value = calculateCosineSimilarity(_output1!, _output2!);
+                if (value >= threshold) {
+                  setState(() {
+                    counter += 1;
+                  });
+                } else {
+                  setState(() {
+                    counter = 0;
+                    _output1 = null;
+                  });
                 }
+                MSG.DBG("Counter is $counter");
+              }
+              if (state is CameraCaptured && counter <= 5) {
+                capturedImage = state.capturedImage;
               }
               if (state is CameraFaceAlert) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -278,33 +288,33 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
           BlocListener<MLServiceCubit, MLServiceState>(
             listener: (context, state) async {
-              if (state is GetEmbeddedVectorSuccess && _output1 == null) {
-                _output1 = state.output;
-              } else if (state is GetEmbeddedVectorSuccess &&
-                  _output1 != null) {
-                _output2 = state.output;
-                _mlServiceCubit.calculateCosineSimilarity(_output1!, _output2!);
-              }
+              // if (state is GetEmbeddedVectorSuccess && _output1 == null) {
+              //   _output1 = state.output;
+              // } else if (state is GetEmbeddedVectorSuccess &&
+              //     _output1 != null) {
+              //   _output2 = state.output;
+              //   _mlServiceCubit.calculateCosineSimilarity(_output1!, _output2!);
+              // }
 
-              if (state is SimmilarityValue) {
-                if (state.value >= threshold) {
-                  setState(() {
-                    counter += 1;
-                  });
-                } else {
-                  setState(() {
-                    counter = 0;
-                    _output1 = null;
-                  });
-                }
-                MSG.DBG("Counter is $counter");
-              }
+              // if (state is SimmilarityValue) {
+              //   if (state.value >= threshold) {
+              //     setState(() {
+              //       counter += 1;
+              //     });
+              //   } else {
+              //     setState(() {
+              //       counter = 0;
+              //       _output1 = null;
+              //     });
+              //   }
+              //   MSG.DBG("Counter is $counter");
+              // }
             },
           )
         ],
         child: BlocBuilder<CameraCubit, CameraState>(
           builder: (context, state) {
-            if (counter >= 5 && capturedImage != null) {
+            if (counter >= 5) {
               return _buildCapturedImage();
             }
 

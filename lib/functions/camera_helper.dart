@@ -1,9 +1,11 @@
 part of 'functions.dart';
 
-Future<XFile?> cropImage(XFile originalImage, Rect boundingBox) async {
+XFile cropImage(Map<String, dynamic> args) {
+  XFile originalImage = args['originalImage'];
+  Rect boundingBox = args['boundingBox'];
   try {
     final File imageFile = File(originalImage.path);
-    final Uint8List imageBytes = await imageFile.readAsBytes();
+    final Uint8List imageBytes = imageFile.readAsBytesSync();
     final img.Image? image = img.decodeImage(imageBytes);
 
     if (image == null) {
@@ -28,13 +30,15 @@ Future<XFile?> cropImage(XFile originalImage, Rect boundingBox) async {
       height: cropHeight,
     );
 
-    final Directory tempDir = await getTemporaryDirectory();
+    final Directory tempDir = Directory.systemTemp;
     final String tempPath = tempDir.path;
     final String croppedImagePath =
         '$tempPath/cropped_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
     final File croppedFile = File(croppedImagePath);
-    await croppedFile.writeAsBytes(img.encodeJpg(croppedImage));
+    croppedFile.writeAsBytesSync(img.encodeJpg(croppedImage));
+
+    MSG.DBG("crop done");
 
     return XFile(croppedImagePath);
   } catch (e) {

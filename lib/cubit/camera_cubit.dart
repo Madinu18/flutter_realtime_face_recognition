@@ -48,34 +48,47 @@ class CameraCubit extends Cubit<CameraState> {
         final XFile image = await controller.takePicture();
         final Rect? detectedFace = await faceDetect(image);
 
+        Map<String, dynamic> args = {
+          'originalImage': image,
+          'boundingBox': detectedFace
+        };
+
         MSG.DBG("Detected Face = $detectedFace");
 
         if (detectedFace != null) {
           if (isFaceProperlyPositioned(detectedFace)) {
-            final XFile? cropResult = await cropImage(image, detectedFace);
-            if (cropResult == null) {
-              throw Exception('Failed to crop image');
+            try {
+              final cropResult = await compute(cropImage, args);
+
+              List<double> output = await getEmbeddedVector(cropResult);
+
+              emit(CameraCaptured(cropResult));
+              emit(OutputEmbeddedVector(output));
+              emit(CameraReady(controller));
+            } catch (e) {
+              MSG.ERR("Error cropping image: $e");
+              emit(CameraError("Failed to process image: $e"));
+              emit(CameraReady(controller));
             }
-
-            Future<List<double>> output = getEmbeddedVector(cropResult);
-
-            emit(OutputEmbeddedVector(output));
-
-            // emit(CameraCaptured(cropResult));
-            emit(CameraReady(controller));
           } else {
             MSG.DBG("Face not within the acceptable area");
-            emit(CameraFaceAlert('Face not within the acceptable area'));
-            emit(CameraReady(controller));
+            if (!isClosed) {
+              emit(CameraFaceAlert('Face not within the acceptable area'));
+              emit(CameraReady(controller));
+            }
           }
         } else {
           MSG.ERR("No faces detected");
-          if (isClosed) return;
-          emit(CameraReady(controller));
+          if (!isClosed) {
+            emit(CameraReady(controller));
+          }
         }
-      } catch (e) {
-        if (isClosed) return;
-        emit(CameraError("Failed to capture image: $e"));
+      } catch (e, stackTrace) {
+        MSG.ERR('Error: $e');
+        MSG.ERR('Stack trace: $stackTrace');
+        if (!isClosed) {
+          emit(CameraError("Failed to capture image: $e"));
+        }
       }
     }
   }
@@ -103,49 +116,6 @@ class CameraCubit extends Cubit<CameraState> {
     }
 
     return null;
-  }
-
-  Future<XFile?> cropImage(XFile originalImage, Rect boundingBox) async {
-    try {
-      final File imageFile = File(originalImage.path);
-      final Uint8List imageBytes = await imageFile.readAsBytes();
-      final img.Image? image = img.decodeImage(imageBytes);
-
-      if (image == null) {
-        throw Exception('Failed to decode image');
-      }
-
-      final int x = boundingBox.left.round();
-      final int y = boundingBox.top.round();
-      final int width = boundingBox.width.round();
-      final int height = boundingBox.height.round();
-
-      final int cropX = x.clamp(0, image.width - 1);
-      final int cropY = y.clamp(0, image.height - 1);
-      final int cropWidth = width.clamp(1, image.width - cropX);
-      final int cropHeight = height.clamp(1, image.height - cropY);
-
-      final img.Image croppedImage = img.copyCrop(
-        image,
-        x: cropX,
-        y: cropY,
-        width: cropWidth,
-        height: cropHeight,
-      );
-
-      final Directory tempDir = await getTemporaryDirectory();
-      final String tempPath = tempDir.path;
-      final String croppedImagePath =
-          '$tempPath/cropped_${DateTime.now().millisecondsSinceEpoch}.jpg';
-
-      final File croppedFile = File(croppedImagePath);
-      await croppedFile.writeAsBytes(img.encodeJpg(croppedImage));
-
-      return XFile(croppedImagePath);
-    } catch (e) {
-      MSG.ERR('Error cropping image: $e'); 
-      return null;
-    }
   }
 
   bool isFaceProperlyPositioned(Rect detectedFace) {
